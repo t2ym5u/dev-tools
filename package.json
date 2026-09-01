@@ -3,11 +3,36 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Petits scripts d'outillage réutilisés entre projets.",
+  "description": "Small tooling scripts reused across projects.",
   "bin": {
-    "sync-version": "./bin/sync-version.js"
+    "sync-version": "./bin/sync-version.js",
+    "switch-config": "./bin/switch-config.js",
+    "switch-package-source": "./bin/switch-package-source.js",
+    "prepare-env": "./bin/prepare-env.js"
   },
   "files": [
     "bin"
-  ]
+  ],
+  "volta": {
+    "node": "26.8.1",
+    "pnpm": "11.8.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "c8": "^12.0.0",
+    "husky": "^9.1.7"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "test": "node --test test/",
+    "test:unit": "node --test test/unit/",
+    "test:e2e": "node --test test/e2e/",
+    "coverage": "c8 --all --src bin --include \"bin/**/*.js\" --exclude \"bin/**/*.test.js\" --check-coverage --lines 100 --functions 100 --branches 100 --statements 100 node --test test/",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "commitlint": "commitlint --edit"
+  }
 }
