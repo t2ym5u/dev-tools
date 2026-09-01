@@ -7,7 +7,7 @@ import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
 const bin = path.resolve(
   import.meta.dirname,
-  "../../bin/switch-package-source.ts",
+  "../../src/switch-package-source.ts",
 );
 
 function run(cwd: string, args: string[] = []): string {

@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/sync-version.ts");
+const bin = path.resolve(import.meta.dirname, "../../src/sync-version.ts");
 
 function initGitRepo(cwd: string): void {
   execFileSync("git", ["init", "-q"], { cwd });

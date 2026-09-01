@@ -3,10 +3,15 @@
 Small tooling scripts reused across projects. Not published on npm —
 installed directly from Git.
 
-Written in TypeScript and run directly by Node's native TypeScript
-support — no build step, no compiled output to commit. This requires
-**Node >= 23.6.0** in every consumer project (enforced via the `engines`
-field); the scripts run as `.ts` files straight from `bin/`, regardless of
+Written in TypeScript (`src/`), compiled to plain JS committed in `bin/`
+— that compiled output is what `pnpm add -D github:...` actually
+installs and runs. Node refuses to run `.ts` files located under a
+`node_modules` directory at all (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`),
+which is exactly where these scripts end up once installed as a
+dependency, so shipping raw TypeScript source as the `bin` entries is not
+an option — only the compiled `bin/*.js` ever runs there. No build step
+or particular Node version is required on the consumer side; this is a
+plain JS package like any other from that point of view, regardless of
 whether the consumer project itself is written in JS or TS.
 
 ## Installation
@@ -110,7 +115,7 @@ For a project where some dependencies point to a private git repo
    ```
 
    `host` can also be a custom object (same shape as the built-in hosts,
-   see `builtinHosts` in `bin/switch-package-source.ts`) for an
+   see `builtinHosts` in `src/switch-package-source.ts`) for an
    unsupported host, or to fix commit extraction if the built-in format
    doesn't match the actual lockfile.
 
@@ -191,19 +196,24 @@ automatically.
 
 ```bash
 pnpm install     # also sets up the git hooks (husky)
-pnpm test        # unit + e2e tests (node:test)
-pnpm test:unit   # unit tests only
-pnpm test:e2e    # e2e tests only (spawn the actual bin/*.ts as subprocesses)
+pnpm build       # compiles src/*.ts to bin/*.js (tsc -p tsconfig.build.json)
+pnpm test        # builds, then unit + e2e tests (node:test)
+pnpm test:unit   # unit tests only (import src/*.ts directly, no build needed)
+pnpm test:e2e    # builds, then e2e tests only (spawn the compiled bin/*.js,
+                 # and test/*.ts sources directly, as subprocesses)
 pnpm coverage    # same tests, enforced at 100% lines/branches/functions/statements
-pnpm typecheck   # tsc --noEmit, type-checking only (Node runs the .ts files unchecked)
-pnpm lint        # Biome check (lint + format, no writes)
+pnpm typecheck   # tsc --noEmit over src/ and test/ (Node runs .ts files
+                 # directly during tests, unchecked at that point)
+pnpm lint        # Biome check (lint + format, no writes) — bin/ (generated) excluded
 pnpm lint:fix    # Biome check --write
 pnpm format      # Biome format --write only
 ```
 
 Git hooks (installed by `pnpm install` via `husky`):
 
-- `pre-commit` runs `pnpm lint && pnpm typecheck && pnpm test`.
+- `pre-commit` runs `pnpm lint && pnpm typecheck && pnpm test && git add bin`
+  — the last step stages the freshly rebuilt `bin/*.js` automatically, so
+  a commit never ships stale compiled output.
 - `commit-msg` runs `commitlint` against
   [Conventional Commits](https://www.conventionalcommits.org/) (feat:,
   fix:, docs:, chore:...), configured in `commitlint.config.mjs` — kept as
@@ -212,22 +222,34 @@ Git hooks (installed by `pnpm install` via `husky`):
 
 ## Adding a new script
 
-- One file per script under `bin/`, registered as a `bin` entry in
-  `package.json`, documented here.
+- One file per script under `src/`, registered as a `bin` entry in
+  `package.json` pointing at the **compiled** `bin/<name>.js`, documented
+  here.
 - Keep the script itself thin (argv parsing, fs/process side effects) and
   put anything worth unit testing in a sibling `<script-name>.lib.ts` with
   named exports — see `switch-package-source.ts` /
   `switch-package-source.lib.ts` for the pattern. Shared logic (e.g.
   `envs.ts`) lives in its own module the same way, without a `bin` entry.
 - Import sibling modules with an explicit `.ts` extension (e.g.
-  `from "./envs.ts"`) — Node's native TypeScript support resolves modules
-  the same way it does for `.js`, with no bundler-style extension
-  rewriting.
+  `from "./envs.ts"`) — this lets tests run the sources directly via
+  Node's native TypeScript support, while `pnpm build`
+  (`rewriteRelativeImportExtensions` in `tsconfig.build.json`) rewrites
+  those to `.js` in the compiled `bin/` output.
 - Only erasable TypeScript syntax is safe to use (type annotations,
   interfaces, `as` casts...) — no `enum`, no experimental decorators, no
-  parameter properties. Node strips types without transforming code, so
-  anything that needs an actual transform will fail at runtime.
-- Add unit tests for the `.lib.ts` exports under `test/unit/`, and an e2e
-  test spawning the real CLI under `test/e2e/` (this is what actually
-  exercises the thin script file — coverage is collected across
-  subprocesses too). `pnpm coverage` must stay at 100%.
+  parameter properties. Tests run the `.ts` sources via Node's native type
+  stripping (not a real transform), so anything needing an actual
+  transform would fail there even though `pnpm build` (a real `tsc`
+  compile) would happen to handle it.
+- A script's own `bin/<name>.js` process, when it needs the path to a
+  sibling script (e.g. `prepare-env` spawning `switch-package-source`),
+  must derive the sibling's extension from its own
+  (`path.extname(fileURLToPath(import.meta.url))`) rather than hardcoding
+  `.ts` or `.js` — that path has to resolve correctly both when running
+  the source directly (tests) and the compiled output (real usage).
+- Add unit tests for the `.lib.ts` exports under `test/unit/` (importing
+  `src/*.lib.ts` directly), and an e2e test spawning the real CLI
+  (`src/<name>.ts`, run directly) under `test/e2e/` — this is what
+  actually exercises the thin script file; coverage is collected across
+  subprocesses too. `pnpm coverage` must stay at 100% (measured against
+  `src/`, not the generated `bin/`).

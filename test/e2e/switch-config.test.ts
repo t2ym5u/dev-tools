@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/switch-config.ts");
+const bin = path.resolve(import.meta.dirname, "../../src/switch-config.ts");
 
 function run(cwd: string, args: string[]): string {
   return execFileSync(process.execPath, [bin, ...args], {
