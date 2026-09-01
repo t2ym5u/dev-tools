@@ -8,11 +8,11 @@ import {
   pathWithFakePnpm,
   removeTmpDir,
   writeFile,
-} from "../helpers.js";
+} from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/prepare-env.js");
+const bin = path.resolve(import.meta.dirname, "../../bin/prepare-env.ts");
 
-function run(cwd) {
+function run(cwd: string): string {
   return execFileSync(process.execPath, [bin], {
     cwd,
     encoding: "utf8",
@@ -20,7 +20,7 @@ function run(cwd) {
   });
 }
 
-function setupProject(cwd) {
+function setupProject(cwd: string): void {
   writeFile(
     cwd,
     "switch-package-source.config.mjs",

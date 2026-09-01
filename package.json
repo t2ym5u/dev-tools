@@ -5,14 +5,17 @@
   "type": "module",
   "description": "Small tooling scripts reused across projects.",
   "bin": {
-    "sync-version": "./bin/sync-version.js",
-    "switch-config": "./bin/switch-config.js",
-    "switch-package-source": "./bin/switch-package-source.js",
-    "prepare-env": "./bin/prepare-env.js"
+    "sync-version": "./bin/sync-version.ts",
+    "switch-config": "./bin/switch-config.ts",
+    "switch-package-source": "./bin/switch-package-source.ts",
+    "prepare-env": "./bin/prepare-env.ts"
   },
   "files": [
     "bin"
   ],
+  "engines": {
+    "node": ">=23.6.0"
+  },
   "volta": {
     "node": "26.8.1",
     "pnpm": "11.8.0"
@@ -21,15 +24,18 @@
     "@biomejs/biome": "^2.5.11",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
+    "@types/node": "^26.0.0",
     "c8": "^12.0.0",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "prepare": "husky",
     "test": "node --test test/",
     "test:unit": "node --test test/unit/",
     "test:e2e": "node --test test/e2e/",
-    "coverage": "c8 --all --src bin --include \"bin/**/*.js\" --exclude \"bin/**/*.test.js\" --check-coverage --lines 100 --functions 100 --branches 100 --statements 100 node --test test/",
+    "coverage": "c8 --all --src bin --include \"bin/**/*.ts\" --exclude \"bin/**/*.test.ts\" --check-coverage --lines 100 --functions 100 --branches 100 --statements 100 node --test test/",
+    "typecheck": "tsc",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",

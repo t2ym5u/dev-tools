@@ -2,12 +2,19 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import type { Host } from "./switch-package-source.lib.ts";
 import {
   applyVersions,
   detectEnvFromPackage,
   getPrivateDeps,
   resolveHost,
-} from "./switch-package-source.lib.js";
+} from "./switch-package-source.lib.ts";
+
+interface SwitchPackageSourceConfig {
+  host: string | Host;
+  org: string;
+  lockfile?: string;
+}
 
 const cwd = process.cwd();
 
@@ -18,11 +25,13 @@ if (!fs.existsSync(configPath)) {
   );
   process.exit(1);
 }
-const { default: config } = await import(pathToFileURL(configPath).href);
+const { default: config } = (await import(pathToFileURL(configPath).href)) as {
+  default: SwitchPackageSourceConfig;
+};
 
 const host = resolveHost(config.host);
 if (!host) {
-  throw new Error(`Unknown host: ${config.host}`);
+  throw new Error(`Unknown host: ${String(config.host)}`);
 }
 const { org } = config;
 const lockfileName = config.lockfile ?? "pnpm-lock.yaml";
@@ -30,10 +39,10 @@ const lockfileName = config.lockfile ?? "pnpm-lock.yaml";
 const packageFile = fs.readFileSync(path.join(cwd, "package.json"));
 const lockFile = fs.readFileSync(path.join(cwd, lockfileName));
 
-const jsonPkg = JSON.parse(packageFile);
+const jsonPkg = JSON.parse(packageFile.toString());
 
 const env = detectEnvFromPackage(jsonPkg, host);
-let newEnv = env === "DEV" ? "PROD" : "DEV";
+let newEnv: "DEV" | "PROD" = env === "DEV" ? "PROD" : "DEV";
 const privateDeps = getPrivateDeps(
   jsonPkg,
   lockFile.toString().split("\n"),
@@ -41,7 +50,7 @@ const privateDeps = getPrivateDeps(
 );
 
 const forceEnv = process.argv[2];
-if (forceEnv && ["DEV", "PROD"].includes(forceEnv)) {
+if (forceEnv === "DEV" || forceEnv === "PROD") {
   newEnv = forceEnv;
 }
 

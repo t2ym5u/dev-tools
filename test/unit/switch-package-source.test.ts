@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Host } from "../../bin/switch-package-source.lib.ts";
 import {
   applyVersions,
   builtinHosts,
   detectEnvFromPackage,
   getPrivateDeps,
   resolveHost,
-} from "../../bin/switch-package-source.lib.js";
+} from "../../bin/switch-package-source.lib.ts";
 
 test("resolveHost resolves a built-in host by name", () => {
   assert.equal(resolveHost("bitbucket"), builtinHosts.bitbucket);
@@ -17,7 +18,7 @@ test("resolveHost returns undefined for an unknown built-in name", () => {
 });
 
 test("resolveHost passes a custom host object through as-is", () => {
-  const customHost = { match: () => true };
+  const customHost = { match: () => true } as unknown as Host;
   assert.equal(resolveHost(customHost), customHost);
 });
 
@@ -114,7 +115,8 @@ test("getPrivateDeps only picks dependencies matching the host, across dependenc
   };
   const result = getPrivateDeps(packageJson, null, host);
   assert.deepEqual(result.map((d) => d.pkg).sort(), ["a", "b"]);
-  assert.equal(result[0].commit, null);
+  const [firstDep] = result;
+  assert.equal(firstDep.commit, null);
 });
 
 test("getPrivateDeps ignores dependency kinds absent from package.json", () => {
@@ -173,7 +175,7 @@ test("applyVersions rewrites every matching dependency to the DEV format", () =>
   );
   const result = applyVersions(
     packageJsonText,
-    [{ pkg: "pkg", commit: "abc" }],
+    [{ pkg: "pkg", commit: "abc", version: "" }],
     host,
     "org",
     "DEV",
@@ -190,7 +192,7 @@ test("applyVersions rewrites every matching dependency to the PROD format", () =
   );
   const result = applyVersions(
     packageJsonText,
-    [{ pkg: "pkg", commit: "abc123" }],
+    [{ pkg: "pkg", commit: "abc123", version: "" }],
     host,
     "org",
     "PROD",

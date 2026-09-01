@@ -3,21 +3,21 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.js";
+import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
 const bin = path.resolve(
   import.meta.dirname,
-  "../../bin/switch-package-source.js",
+  "../../bin/switch-package-source.ts",
 );
 
-function run(cwd, args = []) {
+function run(cwd: string, args: string[] = []): string {
   return execFileSync(process.execPath, [bin, ...args], {
     cwd,
     encoding: "utf8",
   });
 }
 
-function runCapture(cwd, args = []) {
+function runCapture(cwd: string, args: string[] = []) {
   const result = spawnSync(process.execPath, [bin, ...args], {
     cwd,
     encoding: "utf8",
@@ -25,7 +25,16 @@ function runCapture(cwd, args = []) {
   return { ...result, output: `${result.stdout}${result.stderr}` };
 }
 
-function setupProject(cwd, { config, packageJson, lockfile }) {
+interface ProjectSetup {
+  config: string;
+  packageJson: unknown;
+  lockfile: string;
+}
+
+function setupProject(
+  cwd: string,
+  { config, packageJson, lockfile }: ProjectSetup,
+): void {
   writeFile(cwd, "switch-package-source.config.mjs", config);
   writeFile(cwd, "package.json", JSON.stringify(packageJson, null, 2));
   writeFile(cwd, "pnpm-lock.yaml", lockfile);
@@ -75,7 +84,9 @@ test("switches from PROD to DEV using the detected environment", () => {
     const out = run(cwd);
     assert.match(out, /Env is set to : PROD/);
     assert.match(out, /Switching env to : DEV/);
-    const pkg = JSON.parse(readFileSync(path.join(cwd, "package.json")));
+    const pkg = JSON.parse(
+      readFileSync(path.join(cwd, "package.json"), "utf8"),
+    );
     assert.equal(pkg.dependencies.pkg, "bitbucket:coverfield/pkg");
   } finally {
     removeTmpDir(cwd);
@@ -91,7 +102,9 @@ test("switches DEV to PROD using the commit found in the lockfile", () => {
       lockfile: "  - git+ssh://git@bitbucket.org:coverfield/pkg.git#abc123\n",
     });
     run(cwd);
-    const pkg = JSON.parse(readFileSync(path.join(cwd, "package.json")));
+    const pkg = JSON.parse(
+      readFileSync(path.join(cwd, "package.json"), "utf8"),
+    );
     assert.equal(
       pkg.dependencies.pkg,
       "https://bitbucket.org/coverfield/pkg/get/abc123.tar.gz",
@@ -116,7 +129,9 @@ test("forces a specific environment regardless of the detected one", () => {
     });
     const out = run(cwd, ["PROD"]);
     assert.match(out, /Switching env to : PROD \(Force\)/);
-    const pkg = JSON.parse(readFileSync(path.join(cwd, "package.json")));
+    const pkg = JSON.parse(
+      readFileSync(path.join(cwd, "package.json"), "utf8"),
+    );
     assert.equal(
       pkg.dependencies.pkg,
       "https://bitbucket.org/coverfield/pkg/get/abc123.tar.gz",
@@ -179,7 +194,9 @@ test("honors a custom lockfile name and a custom host object", () => {
     writeFile(cwd, "npm-shrinkwrap.json", "{}");
 
     run(cwd);
-    const pkg = JSON.parse(readFileSync(path.join(cwd, "package.json")));
+    const pkg = JSON.parse(
+      readFileSync(path.join(cwd, "package.json"), "utf8"),
+    );
     assert.equal(
       pkg.dependencies.pkg,
       "https://example.com/org/pkg/deadbeef.tar.gz",

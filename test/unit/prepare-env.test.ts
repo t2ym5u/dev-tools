@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { computeTargetEnvs } from "../../bin/prepare-env.lib.js";
+import { computeTargetEnvs } from "../../bin/prepare-env.lib.ts";
 
 test("computeTargetEnvs keeps PROD then DEV when both are declared", () => {
   const envs = { DEV: ["dev"], QLF: ["qlf"], PROD: ["prod"] };
