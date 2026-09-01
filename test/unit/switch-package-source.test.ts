@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Host } from "../../bin/switch-package-source.lib.ts";
+import type { Host } from "../../src/switch-package-source.lib.ts";
 import {
   applyVersions,
   builtinHosts,
   detectEnvFromPackage,
   getPrivateDeps,
   resolveHost,
-} from "../../bin/switch-package-source.lib.ts";
+} from "../../src/switch-package-source.lib.ts";
 
 test("resolveHost resolves a built-in host by name", () => {
   assert.equal(resolveHost("bitbucket"), builtinHosts.bitbucket);

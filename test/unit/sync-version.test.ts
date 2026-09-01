@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { applyVersionPattern } from "../../bin/sync-version.lib.ts";
+import { applyVersionPattern } from "../../src/sync-version.lib.ts";
 
 test("applyVersionPattern replaces the version after the captured prefix", () => {
   const content = "**Current version:** 1.2.3\nrest of file";

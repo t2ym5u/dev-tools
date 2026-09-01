@@ -5,17 +5,14 @@
   "type": "module",
   "description": "Small tooling scripts reused across projects.",
   "bin": {
-    "sync-version": "./bin/sync-version.ts",
-    "switch-config": "./bin/switch-config.ts",
-    "switch-package-source": "./bin/switch-package-source.ts",
-    "prepare-env": "./bin/prepare-env.ts"
+    "sync-version": "./bin/sync-version.js",
+    "switch-config": "./bin/switch-config.js",
+    "switch-package-source": "./bin/switch-package-source.js",
+    "prepare-env": "./bin/prepare-env.js"
   },
   "files": [
     "bin"
   ],
-  "engines": {
-    "node": ">=23.6.0"
-  },
   "volta": {
     "node": "26.8.1",
     "pnpm": "11.8.0"
@@ -31,10 +28,11 @@
   },
   "scripts": {
     "prepare": "husky",
-    "test": "node --test test/",
+    "build": "tsc -p tsconfig.build.json && chmod +x bin/*.js",
+    "test": "pnpm build && node --test test/",
     "test:unit": "node --test test/unit/",
-    "test:e2e": "node --test test/e2e/",
-    "coverage": "c8 --all --src bin --include \"bin/**/*.ts\" --exclude \"bin/**/*.test.ts\" --check-coverage --lines 100 --functions 100 --branches 100 --statements 100 node --test test/",
+    "test:e2e": "pnpm build && node --test test/e2e/",
+    "coverage": "pnpm build && c8 --all --src src --include \"src/**/*.ts\" --exclude \"src/**/*.test.ts\" --check-coverage --lines 100 --functions 100 --branches 100 --statements 100 node --test test/",
     "typecheck": "tsc",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

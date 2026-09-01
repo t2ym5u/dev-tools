@@ -7,8 +7,12 @@ import type { EnvsConfig } from "./envs.ts";
 import { defaultEnvs, packageSourceEnvs } from "./envs.ts";
 import { computeTargetEnvs } from "./prepare-env.lib.ts";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const switchPackageSource = path.join(__dirname, "switch-package-source.ts");
+const selfPath = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(selfPath);
+const switchPackageSource = path.join(
+  __dirname,
+  `switch-package-source${path.extname(selfPath)}`,
+);
 const cwd = process.cwd();
 
 const configPath = path.join(cwd, "envs.config.mjs");

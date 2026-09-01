@@ -10,7 +10,7 @@ import {
   writeFile,
 } from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/prepare-env.ts");
+const bin = path.resolve(import.meta.dirname, "../../src/prepare-env.ts");
 
 function run(cwd: string): string {
   return execFileSync(process.execPath, [bin], {

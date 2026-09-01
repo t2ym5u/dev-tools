@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getEnvFromArg, targetFilename } from "../../bin/switch-config.lib.ts";
+import { getEnvFromArg, targetFilename } from "../../src/switch-config.lib.ts";
 
 const availableEnvs = {
   DEV: ["dev", "develop", "development"],
