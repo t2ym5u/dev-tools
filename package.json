@@ -1,0 +1,13 @@
+{
+  "name": "dev-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Petits scripts d'outillage réutilisés entre projets.",
+  "bin": {
+    "sync-version": "./bin/sync-version.js"
+  },
+  "files": [
+    "bin"
+  ]
+}
