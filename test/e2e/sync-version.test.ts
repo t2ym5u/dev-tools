@@ -3,17 +3,17 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.js";
+import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/sync-version.js");
+const bin = path.resolve(import.meta.dirname, "../../bin/sync-version.ts");
 
-function initGitRepo(cwd) {
+function initGitRepo(cwd: string): void {
   execFileSync("git", ["init", "-q"], { cwd });
   execFileSync("git", ["config", "user.email", "test@example.com"], { cwd });
   execFileSync("git", ["config", "user.name", "Test"], { cwd });
 }
 
-function run(cwd) {
+function run(cwd: string): string {
   return execFileSync(process.execPath, [bin], { cwd, encoding: "utf8" });
 }
 

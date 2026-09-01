@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { defaultEnvs, packageSourceEnvs } from "../../bin/envs.js";
+import { defaultEnvs, packageSourceEnvs } from "../../bin/envs.ts";
 
 test("defaultEnvs declares DEV, QLF and PROD with their aliases", () => {
   assert.deepEqual(defaultEnvs, {

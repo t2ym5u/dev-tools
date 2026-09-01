@@ -3,7 +3,25 @@ export const depsNames = [
   "devDependencies",
   "peerDependencies",
   "optionalDependencies",
-];
+] as const;
+
+export interface ExtractCommitContext {
+  lines: string[];
+  pkg: string;
+}
+
+export interface Host {
+  match: (version: string) => boolean;
+  dev: (ctx: { org: string; pkg: string }) => string;
+  prod: (ctx: { org: string; pkg: string; commit: string | null }) => string;
+  extractCommit: (ctx: ExtractCommitContext) => string | null;
+}
+
+export interface PrivateDep {
+  pkg: string;
+  version: string;
+  commit: string | null;
+}
 
 // DEV (package manager git shorthand) and PROD (public tarball archive)
 // formats are well established for these three hosts. Commit extraction
@@ -11,7 +29,7 @@ export const depsNames = [
 // conditions for Bitbucket — validate against a real pnpm-lock.yaml
 // before relying on github/gitlab, or override via a custom `host` in
 // the config (see README).
-export const builtinHosts = {
+export const builtinHosts: Record<string, Host> = {
   bitbucket: {
     match: (version) => version.includes("bitbucket"),
     dev: ({ org, pkg }) => `bitbucket:${org}/${pkg}`,
@@ -20,16 +38,15 @@ export const builtinHosts = {
     extractCommit: ({ lines, pkg }) => {
       const gitLine = lines.find((l) => l.includes(`/${pkg}.git`));
       if (gitLine) {
-        return gitLine.split("#").at(-1).split("(").at(0).trim();
+        const parts = gitLine.split("#");
+        return parts[parts.length - 1].split("(")[0].trim();
       }
       const tarballLine = lines.find((l) => l.includes(`/${pkg}/get`));
       if (!tarballLine) return null;
-      return tarballLine
-        .split("/")
-        .at(-1)
+      const segments = tarballLine.split("/");
+      return segments[segments.length - 1]
         .replace(/\.tar\.gz.*/, "")
-        .split("(")
-        .at(0)
+        .split("(")[0]
         .trim();
     },
   },
@@ -41,16 +58,15 @@ export const builtinHosts = {
     extractCommit: ({ lines, pkg }) => {
       const gitLine = lines.find((l) => l.includes(`/${pkg}.git`));
       if (gitLine) {
-        return gitLine.split("#").at(-1).split("(").at(0).trim();
+        const parts = gitLine.split("#");
+        return parts[parts.length - 1].split("(")[0].trim();
       }
       const tarballLine = lines.find((l) => l.includes(`/${pkg}/archive/`));
       if (!tarballLine) return null;
-      return tarballLine
-        .split("/")
-        .at(-1)
+      const segments = tarballLine.split("/");
+      return segments[segments.length - 1]
         .replace(/\.tar\.gz.*/, "")
-        .split("(")
-        .at(0)
+        .split("(")[0]
         .trim();
     },
   },
@@ -62,26 +78,33 @@ export const builtinHosts = {
     extractCommit: ({ lines, pkg }) => {
       const gitLine = lines.find((l) => l.includes(`/${pkg}.git`));
       if (gitLine) {
-        return gitLine.split("#").at(-1).split("(").at(0).trim();
+        const parts = gitLine.split("#");
+        return parts[parts.length - 1].split("(")[0].trim();
       }
       const tarballLine = lines.find((l) => l.includes(`/${pkg}/-/archive/`));
       if (!tarballLine) return null;
-      return tarballLine.split("/archive/").at(1).split("/").at(0);
+      const segments = tarballLine.split("/archive/");
+      return segments[1].split("/")[0];
     },
   },
 };
 
-export function resolveHost(host) {
+export function resolveHost(host: string | Host): Host | undefined {
   return typeof host === "string" ? builtinHosts[host] : host;
 }
 
-export function getPrivateDeps(packageJson, lockLines, host) {
-  const result = [];
+export function getPrivateDeps(
+  packageJson: Record<string, unknown>,
+  lockLines: string[] | null,
+  host: Host,
+): PrivateDep[] {
+  const result: PrivateDep[] = [];
 
   for (const depName of depsNames) {
-    if (!packageJson[depName]) continue;
+    const deps = packageJson[depName] as Record<string, string> | undefined;
+    if (!deps) continue;
 
-    for (const [pkg, version] of Object.entries(packageJson[depName])) {
+    for (const [pkg, version] of Object.entries(deps)) {
       if (host.match(version)) {
         const commit = lockLines
           ? host.extractCommit({ lines: lockLines, pkg })
@@ -94,7 +117,10 @@ export function getPrivateDeps(packageJson, lockLines, host) {
   return result;
 }
 
-export function detectEnvFromPackage(packageJson, host) {
+export function detectEnvFromPackage(
+  packageJson: Record<string, unknown>,
+  host: Host,
+): "DEV" | "PROD" {
   let isDev = false;
   let isProd = false;
 
@@ -112,7 +138,13 @@ export function detectEnvFromPackage(packageJson, host) {
   return isDev ? "DEV" : "PROD";
 }
 
-export function applyVersions(packageJsonText, privateDeps, host, org, newEnv) {
+export function applyVersions(
+  packageJsonText: string,
+  privateDeps: PrivateDep[],
+  host: Host,
+  org: string,
+  newEnv: "DEV" | "PROD",
+): string {
   let result = packageJsonText;
 
   for (const { pkg, commit } of privateDeps) {

@@ -3,18 +3,18 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.js";
+import { makeTmpDir, removeTmpDir, writeFile } from "../helpers.ts";
 
-const bin = path.resolve(import.meta.dirname, "../../bin/switch-config.js");
+const bin = path.resolve(import.meta.dirname, "../../bin/switch-config.ts");
 
-function run(cwd, args) {
+function run(cwd: string, args: string[]): string {
   return execFileSync(process.execPath, [bin, ...args], {
     cwd,
     encoding: "utf8",
   });
 }
 
-function runCapture(cwd, args) {
+function runCapture(cwd: string, args: string[]): string {
   const result = spawnSync(process.execPath, [bin, ...args], {
     cwd,
     encoding: "utf8",
@@ -25,7 +25,7 @@ function runCapture(cwd, args) {
 test("prints and exits early when no env argument or NODE_ENV is set", () => {
   const cwd = makeTmpDir();
   try {
-    const { NODE_ENV, ...env } = process.env;
+    const { NODE_ENV: _NODE_ENV, ...env } = process.env;
     const out = execFileSync(process.execPath, [bin], {
       cwd,
       encoding: "utf8",

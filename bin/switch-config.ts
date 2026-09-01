@@ -2,8 +2,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { defaultEnvs } from "./envs.js";
-import { getEnvFromArg, targetFilename } from "./switch-config.lib.js";
+import type { EnvsConfig } from "./envs.ts";
+import { defaultEnvs } from "./envs.ts";
+import { getEnvFromArg, targetFilename } from "./switch-config.lib.ts";
 
 const cwd = process.cwd();
 
@@ -11,8 +12,8 @@ const args = process.argv.slice(2);
 const env = args[0] || process.env.NODE_ENV;
 
 const configPath = path.join(cwd, "envs.config.mjs");
-const availableEnvs = fs.existsSync(configPath)
-  ? (await import(pathToFileURL(configPath).href)).default
+const availableEnvs: EnvsConfig = fs.existsSync(configPath)
+  ? ((await import(pathToFileURL(configPath).href)).default as EnvsConfig)
   : defaultEnvs;
 
 if (!env) {
@@ -34,7 +35,7 @@ if (env === "--help") {
 
 const formattedEnv = getEnvFromArg(availableEnvs, env);
 
-if (!Object.keys(availableEnvs).includes(formattedEnv)) {
+if (!formattedEnv || !Object.keys(availableEnvs).includes(formattedEnv)) {
   console.log("Incorrect usage. Invalid environment.");
   console.log("Available environments: ");
   for (const [key, value] of Object.entries(availableEnvs)) {
@@ -49,7 +50,11 @@ console.log("Moving files based on the environment");
 
 // Recursively search for files matching the *__ENV__ pattern
 // Uses fs/promises and a recursive function to walk directories
-const findFiles = async (dir, pattern, result = []) => {
+const findFiles = async (
+  dir: string,
+  pattern: string,
+  result: string[] = [],
+): Promise<string[]> => {
   const entries = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);

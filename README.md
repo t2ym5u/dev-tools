@@ -3,6 +3,12 @@
 Small tooling scripts reused across projects. Not published on npm —
 installed directly from Git.
 
+Written in TypeScript and run directly by Node's native TypeScript
+support — no build step, no compiled output to commit. This requires
+**Node >= 23.6.0** in every consumer project (enforced via the `engines`
+field); the scripts run as `.ts` files straight from `bin/`, regardless of
+whether the consumer project itself is written in JS or TS.
+
 ## Installation
 
 Always pin an exact tag, never the default branch — otherwise a future
@@ -104,7 +110,7 @@ For a project where some dependencies point to a private git repo
    ```
 
    `host` can also be a custom object (same shape as the built-in hosts,
-   see `builtinHosts` in `bin/switch-package-source.js`) for an
+   see `builtinHosts` in `bin/switch-package-source.ts`) for an
    unsupported host, or to fix commit extraction if the built-in format
    doesn't match the actual lockfile.
 
@@ -187,8 +193,9 @@ automatically.
 pnpm install     # also sets up the git hooks (husky)
 pnpm test        # unit + e2e tests (node:test)
 pnpm test:unit   # unit tests only
-pnpm test:e2e    # e2e tests only (spawn the actual bin/*.js as subprocesses)
+pnpm test:e2e    # e2e tests only (spawn the actual bin/*.ts as subprocesses)
 pnpm coverage    # same tests, enforced at 100% lines/branches/functions/statements
+pnpm typecheck   # tsc --noEmit, type-checking only (Node runs the .ts files unchecked)
 pnpm lint        # Biome check (lint + format, no writes)
 pnpm lint:fix    # Biome check --write
 pnpm format      # Biome format --write only
@@ -196,21 +203,31 @@ pnpm format      # Biome format --write only
 
 Git hooks (installed by `pnpm install` via `husky`):
 
-- `pre-commit` runs `pnpm lint && pnpm test`.
+- `pre-commit` runs `pnpm lint && pnpm typecheck && pnpm test`.
 - `commit-msg` runs `commitlint` against
   [Conventional Commits](https://www.conventionalcommits.org/) (feat:,
-  fix:, docs:, chore:...), configured in `commitlint.config.mjs`.
+  fix:, docs:, chore:...), configured in `commitlint.config.mjs` — kept as
+  plain JS since `@commitlint/load` has no built-in TypeScript config
+  loader.
 
 ## Adding a new script
 
 - One file per script under `bin/`, registered as a `bin` entry in
   `package.json`, documented here.
 - Keep the script itself thin (argv parsing, fs/process side effects) and
-  put anything worth unit testing in a sibling `<script-name>.lib.js` with
-  named exports — see `switch-package-source.js` /
-  `switch-package-source.lib.js` for the pattern. Shared logic (e.g.
-  `envs.js`) lives in its own module the same way, without a `bin` entry.
-- Add unit tests for the `.lib.js` exports under `test/unit/`, and an e2e
+  put anything worth unit testing in a sibling `<script-name>.lib.ts` with
+  named exports — see `switch-package-source.ts` /
+  `switch-package-source.lib.ts` for the pattern. Shared logic (e.g.
+  `envs.ts`) lives in its own module the same way, without a `bin` entry.
+- Import sibling modules with an explicit `.ts` extension (e.g.
+  `from "./envs.ts"`) — Node's native TypeScript support resolves modules
+  the same way it does for `.js`, with no bundler-style extension
+  rewriting.
+- Only erasable TypeScript syntax is safe to use (type annotations,
+  interfaces, `as` casts...) — no `enum`, no experimental decorators, no
+  parameter properties. Node strips types without transforming code, so
+  anything that needs an actual transform will fail at runtime.
+- Add unit tests for the `.lib.ts` exports under `test/unit/`, and an e2e
   test spawning the real CLI under `test/e2e/` (this is what actually
   exercises the thin script file — coverage is collected across
   subprocesses too). `pnpm coverage` must stay at 100%.
